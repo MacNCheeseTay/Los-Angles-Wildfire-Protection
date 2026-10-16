@@ -114,31 +114,6 @@ grid['past_fires'] = grid.groupby(["col", "row"])["burned"].cumsum() - grid["bur
 print(len(grid), grid["burned"].sum()) 
 
 
-
- #ML!!!
-
-train = grid[(grid["year"] >= 2013) & (grid["year"] <= 2021)]
-test = grid[grid["year"] >= 2022]
-print(len(train), len(test))
-
-features = ["col", "row", "past_fires"]
-
-X_train = train[features]
-y_train = train["burned"]
-X_test  = test[features] #vars for the model
-y_test  = test["burned"]
-
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.metrics import confusion_matrix
-
-model = DecisionTreeClassifier(max_depth=6, class_weight="balanced") #depth and weight of our model
-#we are using decision tree 
-model.fit(X_train, y_train) #our fitting/training
-
-predictions = model.predict(X_test) #our predictions of the model
-
-print(confusion_matrix(y_test, predictions)) #uh its no better than guessing/random thus we provide more info to the ML
-
 #now we add neighbor fires
 #idea: for every square and year. add up how many fires its 8 neighbots had
 #imagine the 8 squares around the chessboard
@@ -158,3 +133,44 @@ for dc in [-1, 0, 1]:            # shift left, none, right
         grid = grid.drop(columns="n")
 
 print(grid["neighbor_fires"].max())
+
+ #ML!!!
+
+train = grid[(grid["year"] >= 2013) & (grid["year"] <= 2021)]
+test = grid[grid["year"] >= 2022]
+print(len(train), len(test))
+
+features = ["col", "row", "past_fires", "neighbor_fires"]
+
+X_train = train[features]
+y_train = train["burned"]
+X_test  = test[features] #vars for the model
+y_test  = test["burned"]
+
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import confusion_matrix
+
+model = DecisionTreeClassifier(max_depth=6, class_weight="balanced", random_state=0) #depth and weight of our model
+#we are using decision tree 
+model.fit(X_train, y_train) #our fitting/training
+
+predictions = model.predict(X_test) #our predictions of the model
+
+cm = confusion_matrix(y_test, predictions)
+
+table = pd.DataFrame(
+    cm,
+    index=["Actually NO fire", "Actually FIRE"],
+    columns=["Predicted NO fire", "Predicted FIRE"],
+)
+print(table) #uh its no better than guessing/random thus we provide more info to the ML
+caught = cm[1][1]
+missed = cm[1][0]
+false_alarms = cm[0][1]
+
+recall = caught / (caught + missed)
+precision = caught / (caught + false_alarms)
+
+print(f"Fires caught: {caught} of {caught + missed}")
+print(f"Recall:    {recall:.1%}")
+print(f"Precision: {precision:.1%}")
