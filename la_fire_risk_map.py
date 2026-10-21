@@ -146,7 +146,7 @@ squares = pd.DataFrame(square_list, columns=["col", "row", "lat", "lon"])
 
 print(len(squares))
 print(squares.head(3))
-
+#elevation addition 
 import os
 import time
 import requests
@@ -178,7 +178,19 @@ else:
     elev["elevation"] = elev["elevation"].fillna(0)   # ocean comes back empty, so call it 0 m
     elev.to_csv("elevation.csv", index=False)
 
-grid = grid.merge(elev[["col", "row", "elevation"]], on=["col", "row"], how="left")
+elev_map = elev.pivot(index="col", columns="row", values="elevation").values  #TURN LIST INTO MAP
+print(elev_map.shape) #prints the shape of elevation map
+
+#New section; uphill/downhill slope and why fires are prone to spread
+
+rise_ew, rise_ns = np.gradient(elev_map, 2000 ) #its like geo!
+
+steepness = np.sqrt(rise_ew**2 + rise_ns**2)  #combine iwth pythagoras and turninto degfrees 
+slope_deg = np.degrees(np.arctan(steepness))#arctan turns slope into angle which is trig; so idk i had to ask claude :(
+elev["slope"] = slope_deg[elev["col"], elev["row"]] #transforms it back into a list.
+print(elev["slope"].describe())
+
+grid = grid.merge(elev[["col", "row", "elevation", "slope"]], on=["col", "row"], how="left")
 print(len(grid))
 
 print(elev.head())
@@ -213,7 +225,7 @@ table = pd.DataFrame(
     index=["Actually NO fire", "Actually FIRE"],
     columns=["Predicted NO fire", "Predicted FIRE"],
 )
-print(table) #uh its no better than guessing/random thus we provide more info to the ML
+print(table) #uh its no better than guessing/random thus we provide more info to the ML which ill add more on top
 caught = cm[1][1]
 missed = cm[1][0]
 false_alarms = cm[0][1]
