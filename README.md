@@ -1,12 +1,7 @@
 # Los-Angles-Wildfire-Protection
 
 
-<<<<<<< HEAD
-
-Features:
-=======
 **Features:**
->>>>>>> d48e542 (neighbor fires)
 
 la_fires_v1.py (the basic fire map) Version 1
 
