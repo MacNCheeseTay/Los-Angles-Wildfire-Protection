@@ -134,13 +134,63 @@ for dc in [-1, 0, 1]:            # shift left, none, right
 
 print(grid["neighbor_fires"].max())
 
+
+
+square_list = []
+for c in range(120):
+    for r in range(122):
+        lat, lon = square_center(c,r)
+        square_list.append((c, r, lat, lon))
+
+squares = pd.DataFrame(square_list, columns=["col", "row", "lat", "lon"])
+
+print(len(squares))
+print(squares.head(3))
+
+import os
+import time
+import requests
+
+if os.path.exists("elevation.csv"):
+    elev = pd.read_csv("elevation.csv")          # already downloaded, so just load it
+else:
+    elevations = []
+    for start in range(0, len(squares), 100):     # 0, 100, 200, 300...
+        batch = squares.iloc[start : start + 100]  # 100 squares at a time
+
+        locations = "|".join(
+            f"{lat},{lon}" for lat, lon in zip(batch["lat"].round(5), batch["lon"].round(5))
+        )
+
+        url = f"https://api.opentopodata.org/v1/srtm90m?locations={locations}"
+        data = requests.get(url).json()
+
+        if data.get("status") != "OK":             # API sent an error instead
+            print("API problem:", data)
+            break
+
+        elevations.extend([r["elevation"] for r in data["results"]])
+        print("done with", start)
+        time.sleep(1.1)                            # their rule: max 1 call per second
+
+    elev = squares.copy()
+    elev["elevation"] = elevations
+    elev["elevation"] = elev["elevation"].fillna(0)   # ocean comes back empty, so call it 0 m
+    elev.to_csv("elevation.csv", index=False)
+
+grid = grid.merge(elev[["col", "row", "elevation"]], on=["col", "row"], how="left")
+print(len(grid))
+
+print(elev.head())
+print(elev["elevation"].min(), elev["elevation"].max())
+
  #ML!!!
 
 train = grid[(grid["year"] >= 2013) & (grid["year"] <= 2021)]
 test = grid[grid["year"] >= 2022]
 print(len(train), len(test))
 
-features = ["col", "row", "past_fires", "neighbor_fires"]
+features = ["col", "row", "past_fires", "neighbor_fires", "elevation"]
 
 X_train = train[features]
 y_train = train["burned"]
