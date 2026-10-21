@@ -52,3 +52,16 @@ Results:
 Fire history alone, a square's own or its neighbors', doesn't predict where
 LA fires happen. After an area burns, the brush takes years to grow back, so
 recently burned spots are often the least likely to burn again soon.
+
+Include Elevations
+Results:
+
+| Metric        | Neighbors only | + Elevation |
+|---------------|----------------|-------------|
+| Fires caught  | 203 of 628     | 188 of 628  |
+| Recall        | 32.3%          | 29.9%       |
+| Precision     | 1.4%           | 1.7%        |
+| False alarms  | 13,968         | 10,846      |
+
+**Result:** Elevation cut false alarms by 22% by letting the model rule out
+the ocean and the flat city. It's the first feature that beat random guessing.
